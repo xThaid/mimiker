@@ -164,12 +164,11 @@ KTEST_ADD(malloc_one_allocation, malloc_one_allocation, 0);
 KTEST_ADD(malloc_invalid_values, malloc_invalid_values, 0);
 KTEST_ADD(malloc_multiple_allocations, malloc_multiple_allocations, 0);
 KTEST_ADD(malloc_dynamic_pages_addition, malloc_dynamic_pages_addition, 0);
-KTEST_ADD(malloc_threads_private_block, malloc_threads_private_block,
-          KTEST_FLAG_BROKEN);
+KTEST_ADD(malloc_threads_private_block, malloc_threads_private_block, 0);
 KTEST_ADD(malloc_threads_many_private_blocks,
-          malloc_threads_many_private_blocks, KTEST_FLAG_BROKEN);
+          malloc_threads_many_private_blocks, 0);
 KTEST_ADD(malloc_threads_random_shared_blocks,
-          malloc_threads_random_shared_blocks, KTEST_FLAG_BROKEN);
+          malloc_threads_random_shared_blocks, 0);
 /* Reserve some memory for mem_block_t. */
 #define RESERVED 1024
 KTEST_ADD_RANDINT(malloc_random_size, (void *)malloc_random_size, 0,
