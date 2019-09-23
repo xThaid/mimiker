@@ -27,14 +27,6 @@
 
 #ifndef __ASSEMBLER__
 
-/*
- * Standard types
- */
-typedef unsigned int reg_t;
-typedef unsigned int reg32_t;
-typedef signed int sreg_t;
-typedef float freg_t;
-
 #define MIPS_KSEG0_TO_PHYS(x) ((uintptr_t)(x)&MIPS_PHYS_MASK)
 #define MIPS_PHYS_TO_KSEG0(x) ((uintptr_t)(x) | (intptr_t)MIPS_KSEG0_START)
 #define MIPS_KSEG1_TO_PHYS(x) ((uintptr_t)(x)&MIPS_PHYS_MASK)

@@ -1,17 +1,16 @@
-#ifndef _sys_sysent_h_
-#define _sys_sysent_h_
+#ifndef _SYS_SYSENT_H_
+#define _SYS_SYSENT_H_
 
 #include <sys/cdefs.h>
-#include <mips/mips.h>
 #include <sys/syscall.h>
 
 typedef struct thread thread_t;
 
-#define syscall_args_max 4
+#define SYSCALL_ARGS_MAX 4
 
 typedef struct syscall_args {
-  uint32_t code;
-  reg_t args[syscall_args_max];
+  register_t code;
+  register_t args[SYSCALL_ARGS_MAX];
 } syscall_args_t;
 
 typedef int syscall_t(thread_t *, syscall_args_t *);
@@ -22,4 +21,4 @@ typedef struct {
 
 extern sysent_t sysent[];
 
-#endif /* !_sys_sysent_h_ */
+#endif /* !_SYS_SYSENT_H_ */
