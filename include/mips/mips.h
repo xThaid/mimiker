@@ -6,7 +6,7 @@
 /* MIPS32r2 extract bits */
 #define _mips32r2_ext(x, pos, sz)                                              \
   __extension__({                                                              \
-    unsigned int __x = (x), __v;                                               \
+    register_t __x = (x), __v;                                                 \
     __asm__("ext %0,%z1,%2,%3" : "=d"(__v) : "dJ"(__x), "I"(pos), "I"(sz));    \
     __v;                                                                       \
   })

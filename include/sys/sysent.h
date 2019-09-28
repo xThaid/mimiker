@@ -3,22 +3,16 @@
 
 #include <sys/cdefs.h>
 #include <sys/syscall.h>
+#include <sys/syscallargs.h>
 
 typedef struct thread thread_t;
 
-#define SYSCALL_ARGS_MAX 4
+typedef int syscall_t(thread_t *, void *);
 
-typedef struct syscall_args {
-  register_t code;
-  register_t args[SYSCALL_ARGS_MAX];
-} syscall_args_t;
-
-typedef int syscall_t(thread_t *, syscall_args_t *);
-
-typedef struct {
+struct sysent {
   syscall_t *call;
-} sysent_t;
+};
 
-extern sysent_t sysent[];
+extern struct sysent sysent[];
 
 #endif /* !_SYS_SYSENT_H_ */
