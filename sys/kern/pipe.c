@@ -10,11 +10,9 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <sys/filedesc.h>
-#include <sys/thread.h>
 #include <sys/proc.h>
 #include <sys/ringbuf.h>
 #include <sys/uio.h>
-#include <sys/sysinit.h>
 
 typedef struct pipe_end pipe_end_t;
 typedef struct pipe pipe_t;
@@ -73,13 +71,11 @@ static void pipe_free(pipe_t *pipe) {
   }
 }
 
-static int pipe_read(file_t *f, thread_t *td, uio_t *uio) {
+static int pipe_read(file_t *f, uio_t *uio) {
   pipe_end_t *consumer = f->f_data;
   pipe_end_t *producer = consumer->other;
 
   assert(!consumer->closed);
-
-  int len = uio->uio_resid;
 
   /* no read atomicity for now! */
   WITH_MTX_LOCK (&producer->mtx) {
@@ -97,10 +93,10 @@ static int pipe_read(file_t *f, thread_t *td, uio_t *uio) {
     } while (!producer->closed);
   }
 
-  return len - uio->uio_resid;
+  return 0;
 }
 
-static int pipe_write(file_t *f, thread_t *td, uio_t *uio) {
+static int pipe_write(file_t *f, uio_t *uio) {
   pipe_end_t *producer = f->f_data;
   pipe_end_t *consumer = producer->other;
 
@@ -108,9 +104,7 @@ static int pipe_write(file_t *f, thread_t *td, uio_t *uio) {
 
   /* Reading end is closed, no use in sending data there. */
   if (consumer->closed)
-    return -ESPIPE;
-
-  int len = uio->uio_resid;
+    return ESPIPE;
 
   /* no write atomicity for now! */
   WITH_MTX_LOCK (&producer->mtx) {
@@ -128,10 +122,10 @@ static int pipe_write(file_t *f, thread_t *td, uio_t *uio) {
     } while (!consumer->closed);
   }
 
-  return len - uio->uio_resid;
+  return 0;
 }
 
-static int pipe_close(file_t *f, thread_t *td) {
+static int pipe_close(file_t *f) {
   pipe_end_t *end = f->f_data;
 
   WITH_MTX_LOCK (&end->mtx) {
@@ -144,12 +138,12 @@ static int pipe_close(file_t *f, thread_t *td) {
   return 0;
 }
 
-static int pipe_stat(file_t *f, thread_t *td, stat_t *sb) {
-  return -ENOTSUP;
+static int pipe_stat(file_t *f, stat_t *sb) {
+  return ENOTSUP;
 }
 
-static int pipe_seek(file_t *f, thread_t *td, off_t offset, int whence) {
-  return -ENOTSUP;
+static int pipe_seek(file_t *f, off_t offset, int whence) {
+  return ESPIPE;
 }
 
 static fileops_t pipeops = {.fo_read = pipe_read,
@@ -167,9 +161,7 @@ static file_t *make_pipe_file(pipe_end_t *end) {
   return file;
 }
 
-int do_pipe(thread_t *td, int fds[2]) {
-  proc_t *p = proc_self();
-
+int do_pipe(proc_t *p, int fds[2]) {
   pipe_t *pipe = pipe_alloc();
   pipe_end_t *consumer = &pipe->end[0];
   pipe_end_t *producer = &pipe->end[1];
@@ -181,13 +173,13 @@ int do_pipe(thread_t *td, int fds[2]) {
 
   error = fdtab_install_file(p->p_fdtable, file0, &fds[0]);
   if (error) {
-    pipe_close(file0, td);
+    pipe_close(file0);
     return error;
   }
   error = fdtab_install_file(p->p_fdtable, file1, &fds[1]);
   if (error) {
     fdtab_close_fd(p->p_fdtable, fds[0]);
-    pipe_close(file1, td);
+    pipe_close(file1);
     return error;
   }
   return 0;
