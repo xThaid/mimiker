@@ -34,12 +34,28 @@ static bool is_valid(pte_t pte) {
   return pte & PTE_VALID;
 }
 
-static bool in_user_space(vaddr_t addr) {
-  return addr < PMAP_USER_END;
+static bool user_addr_p(vaddr_t addr) {
+  return (addr >= PMAP_USER_BEGIN) && (addr < PMAP_USER_END);
 }
 
-static bool in_kernel_space(vaddr_t addr) {
-  return (addr >= PMAP_KERNEL_BEGIN && addr < PMAP_KERNEL_END);
+static bool kern_addr_p(vaddr_t addr) {
+  return (addr >= PMAP_KERNEL_BEGIN) && (addr < PMAP_KERNEL_END);
+}
+
+vaddr_t pmap_start(pmap_t *pmap) {
+  return pmap->asid ? PMAP_USER_BEGIN : PMAP_KERNEL_BEGIN;
+}
+
+vaddr_t pmap_end(pmap_t *pmap) {
+  return pmap->asid ? PMAP_USER_END : PMAP_KERNEL_END;
+}
+
+bool pmap_address_p(pmap_t *pmap, vaddr_t va) {
+  return pmap_start(pmap) <= va && va < pmap_end(pmap);
+}
+
+bool pmap_contains_p(pmap_t *pmap, vaddr_t start, vaddr_t end) {
+  return pmap_start(pmap) <= start && end <= pmap_end(pmap);
 }
 
 static pmap_t kernel_pmap;
@@ -81,19 +97,17 @@ static void update_wired_pde(pmap_t *umap) {
 }
 
 /* Page Table is accessible only through physical addresses. */
-static void pmap_setup(pmap_t *pmap, vaddr_t start, vaddr_t end) {
+static void pmap_setup(pmap_t *pmap) {
   vm_page_t *pde_page = pm_alloc(1);
   pmap->pde_page = pde_page;
   pmap->pde = PG_KSEG0_ADDR(pde_page);
-  pmap->start = start;
-  pmap->end = end;
   pmap->asid = alloc_asid();
   mtx_init(&pmap->mtx, 0);
   klog("Page directory table allocated at %p", (vaddr_t)pmap->pde);
   TAILQ_INIT(&pmap->pte_pages);
 
   for (int i = 0; i < PD_ENTRIES; i++)
-    pmap->pde[i] = in_kernel_space(i * PT_ENTRIES * PAGESIZE) ? PTE_GLOBAL : 0;
+    pmap->pde[i] = kern_addr_p(i * PT_ENTRIES * PAGESIZE) ? PTE_GLOBAL : 0;
 }
 
 /* TODO: remove all mappings from TLB, evict related cache lines */
@@ -108,12 +122,12 @@ void pmap_reset(pmap_t *pmap) {
 }
 
 void pmap_init(void) {
-  pmap_setup(&kernel_pmap, PMAP_KERNEL_BEGIN, PMAP_KERNEL_END);
+  pmap_setup(&kernel_pmap);
 }
 
 pmap_t *pmap_new(void) {
   pmap_t *pmap = pool_alloc(P_PMAP, PF_ZERO);
-  pmap_setup(pmap, PMAP_USER_BEGIN, PMAP_USER_END);
+  pmap_setup(pmap);
   return pmap;
 }
 
@@ -179,8 +193,8 @@ void pmap_enter(pmap_t *pmap, vaddr_t va, vm_page_t *pg, vm_prot_t prot) {
   vaddr_t va_end = va + PG_SIZE(pg);
   paddr_t pa = PG_START(pg);
 
-  assert(is_page_aligned(va));
-  assert(pmap->start <= va && va_end <= pmap->end);
+  assert(page_aligned_p(va));
+  assert(pmap_contains_p(pmap, va, va_end));
 
   klog("Enter virtual mapping %p-%p for frame %p", va, va_end, PG_START(pg));
 
@@ -191,13 +205,13 @@ void pmap_enter(pmap_t *pmap, vaddr_t va, vm_page_t *pg, vm_prot_t prot) {
     for (; va < va_end; va += PAGESIZE, pa += PAGESIZE)
       pmap_pte_write(pmap, va,
                      PTE_PFN(pa) | (vm_prot_map[prot] & ~mask) |
-                       (in_kernel_space(va) ? PTE_GLOBAL : 0));
+                       (kern_addr_p(va) ? PTE_GLOBAL : 0));
   }
 }
 
 void pmap_remove(pmap_t *pmap, vaddr_t start, vaddr_t end) {
-  assert(is_page_aligned(start) && is_page_aligned(end));
-  assert(start < end && start >= pmap->start && end <= pmap->end);
+  assert(page_aligned_p(start) && page_aligned_p(end) && start < end);
+  assert(pmap_contains_p(pmap, start, end));
 
   klog("Remove page mapping for address range %p-%p", start, end);
 
@@ -210,8 +224,8 @@ void pmap_remove(pmap_t *pmap, vaddr_t start, vaddr_t end) {
 }
 
 void pmap_protect(pmap_t *pmap, vaddr_t start, vaddr_t end, vm_prot_t prot) {
-  assert(is_page_aligned(start) && is_page_aligned(end));
-  assert(start < end && start >= pmap->start && end <= pmap->end);
+  assert(page_aligned_p(start) && page_aligned_p(end) && start < end);
+  assert(pmap_contains_p(pmap, start, end));
 
   klog("Change protection bits to %x for address range %p-%p", prot, start,
        end);
@@ -261,9 +275,9 @@ pmap_t *pmap_user(void) {
 }
 
 pmap_t *pmap_lookup(vaddr_t addr) {
-  if (in_kernel_space(addr))
+  if (kern_addr_p(addr))
     return pmap_kernel();
-  if (in_user_space(addr))
+  if (user_addr_p(addr))
     return pmap_user();
   return NULL;
 }

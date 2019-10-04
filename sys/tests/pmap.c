@@ -12,8 +12,8 @@ static int test_kernel_pmap(void) {
   vm_page_t *pg = pm_alloc(PAGES);
   size_t size = pg->size * PAGESIZE;
 
-  vaddr_t vaddr = pmap->start;
-  vaddr_t end = pmap->start + size;
+  vaddr_t vaddr = pmap_start(pmap);
+  vaddr_t end = vaddr + size;
 
   pmap_enter(pmap, vaddr, pg, VM_PROT_READ | VM_PROT_WRITE);
 

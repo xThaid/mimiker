@@ -14,10 +14,14 @@ typedef struct pmap {
   pte_t *pde;          /* directory page table */
   vm_page_t *pde_page; /* pointer to a page with directory page table */
   pg_list_t pte_pages; /* pages we allocate in page table */
-  vaddr_t start, end;
   asid_t asid;
   mtx_t mtx;
 } pmap_t;
+
+bool pmap_address_p(pmap_t *pmap, vaddr_t va);
+bool pmap_contains_p(pmap_t *pmap, vaddr_t start, vaddr_t end);
+vaddr_t pmap_start(pmap_t *pmap);
+vaddr_t pmap_end(pmap_t *pmap);
 
 void pmap_init(void);
 

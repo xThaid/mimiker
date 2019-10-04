@@ -14,9 +14,9 @@
 #define PT_ENTRIES 1024 /* page table entries */
 #define PT_SIZE (PT_ENTRIES * PTE_SIZE)
 
-#define PMAP_KERNEL_BEGIN MIPS_KSEG2_START
-#define PMAP_KERNEL_END 0xffffe000 /* kseg2 & kseg3 */
-#define PMAP_USER_BEGIN 0x00400000
+#define PMAP_KERNEL_BEGIN 0xc0000000 /* kseg2 & kseg3 */
+#define PMAP_KERNEL_END 0xffffe000
+#define PMAP_USER_BEGIN 0x00001000
 #define PMAP_USER_END 0x80000000
 
 /* Base addresses of active user and kernel page directory tables.

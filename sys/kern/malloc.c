@@ -121,8 +121,8 @@ static void kmalloc_add_pages(kmem_pool_t *mp, unsigned pages) {
                                    VM_PROT_READ | VM_PROT_WRITE, VM_ANON, &seg);
   if (error)
     panic("failed to alloc pages for '%s'", mp->mp_desc);
-  vaddr_t start, end;
-  vm_segment_range(seg, &start, &end);
+  vaddr_t start = vm_segment_start(seg);
+  vaddr_t end = vm_segment_end(seg);
   kmalloc_add_arena(mp, start, end - start);
 }
 
