@@ -10,11 +10,11 @@
 #include <sys/ktest.h>
 
 static int paging_on_demand_and_memory_protection_demo(void) {
-  vm_map_t *orig = get_user_vm_map();
+  vm_map_t *orig = vm_map_user();
   vm_map_activate(vm_map_new());
 
-  vm_map_t *kmap = get_kernel_vm_map();
-  vm_map_t *umap = get_user_vm_map();
+  vm_map_t *kmap = vm_map_kernel();
+  vm_map_t *umap = vm_map_user();
 
   vaddr_t pre_start, start, end, post_end;
   int n;
@@ -76,7 +76,7 @@ static int paging_on_demand_and_memory_protection_demo(void) {
 }
 
 static int findspace_demo(void) {
-  vm_map_t *orig = get_user_vm_map();
+  vm_map_t *orig = vm_map_user();
 
   vm_map_t *umap = vm_map_new();
   vm_map_activate(umap);

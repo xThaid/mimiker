@@ -47,11 +47,11 @@ void vm_map_unlock(vm_map_t *map) {
   mtx_unlock(&map->mtx);
 }
 
-vm_map_t *get_user_vm_map(void) {
+vm_map_t *vm_map_user(void) {
   return PCPU_GET(uspace);
 }
 
-vm_map_t *get_kernel_vm_map(void) {
+vm_map_t *vm_map_kernel(void) {
   return kspace;
 }
 
@@ -69,11 +69,11 @@ bool vm_map_in_range(vm_map_t *map, vaddr_t addr) {
   return map && map->pmap && map->pmap->start <= addr && addr < map->pmap->end;
 }
 
-vm_map_t *get_active_vm_map_by_addr(vaddr_t addr) {
-  if (vm_map_in_range(get_user_vm_map(), addr))
-    return get_user_vm_map();
-  if (vm_map_in_range(get_kernel_vm_map(), addr))
-    return get_kernel_vm_map();
+vm_map_t *vm_map_lookup(vaddr_t addr) {
+  if (vm_map_in_range(vm_map_user(), addr))
+    return vm_map_user();
+  if (vm_map_in_range(vm_map_kernel(), addr))
+    return vm_map_kernel();
   return NULL;
 }
 
@@ -84,7 +84,7 @@ static void vm_map_setup(vm_map_t *map) {
 
 void vm_map_init(void) {
   vm_map_setup(kspace);
-  kspace->pmap = get_kernel_pmap();
+  kspace->pmap = pmap_kernel();
   vm_map_activate(kspace);
 }
 

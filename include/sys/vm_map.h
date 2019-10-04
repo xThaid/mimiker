@@ -24,9 +24,9 @@ void vm_map_init(void);
 
 void vm_map_activate(vm_map_t *map);
 
-vm_map_t *get_user_vm_map(void);
-vm_map_t *get_kernel_vm_map(void);
-vm_map_t *get_active_vm_map_by_addr(vaddr_t addr);
+vm_map_t *vm_map_user(void);
+vm_map_t *vm_map_kernel(void);
+vm_map_t *vm_map_lookup(vaddr_t addr);
 
 vm_map_t *vm_map_new(void);
 void vm_map_delete(vm_map_t *vm_map);

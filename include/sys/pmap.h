@@ -40,8 +40,10 @@ void pmap_set_referenced(paddr_t pa);
 void pmap_set_modified(paddr_t pa);
 
 void pmap_activate(pmap_t *pmap);
-pmap_t *get_kernel_pmap(void);
-pmap_t *get_user_pmap(void);
+
+pmap_t *pmap_lookup(vaddr_t va);
+pmap_t *pmap_kernel(void);
+pmap_t *pmap_user(void);
 
 void tlb_exception_handler(exc_frame_t *frame);
 

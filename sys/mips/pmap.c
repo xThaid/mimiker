@@ -66,7 +66,7 @@ static void free_asid(asid_t asid) {
 }
 
 static void update_wired_pde(pmap_t *umap) {
-  pmap_t *kmap = get_kernel_pmap();
+  pmap_t *kmap = pmap_kernel();
 
   /* Both ENTRYLO0 and ENTRYLO1 must have G bit set for address translation
    * to skip ASID check. */
@@ -252,19 +252,19 @@ void pmap_activate(pmap_t *pmap) {
   mips32_setentryhi(pmap ? pmap->asid : 0);
 }
 
-pmap_t *get_kernel_pmap(void) {
+pmap_t *pmap_kernel(void) {
   return &kernel_pmap;
 }
 
-pmap_t *get_user_pmap(void) {
+pmap_t *pmap_user(void) {
   return PCPU_GET(curpmap);
 }
 
-pmap_t *get_active_pmap_by_addr(vaddr_t addr) {
+pmap_t *pmap_lookup(vaddr_t addr) {
   if (in_kernel_space(addr))
-    return get_kernel_pmap();
+    return pmap_kernel();
   if (in_user_space(addr))
-    return get_user_pmap();
+    return pmap_user();
   return NULL;
 }
 
@@ -277,7 +277,7 @@ void tlb_exception_handler(exc_frame_t *frame) {
   klog("%s at $%08x, caused by reference to $%08lx!", exceptions[code],
        frame->pc, vaddr);
 
-  pmap_t *pmap = get_active_pmap_by_addr(vaddr);
+  pmap_t *pmap = pmap_lookup(vaddr);
   if (!pmap) {
     klog("No physical map defined for %08lx address!", vaddr);
     goto fault;
@@ -300,7 +300,7 @@ void tlb_exception_handler(exc_frame_t *frame) {
     }
   }
 
-  vm_map_t *vmap = get_active_vm_map_by_addr(vaddr);
+  vm_map_t *vmap = vm_map_lookup(vaddr);
   if (!vmap) {
     klog("No virtual address space defined for %08lx!", vaddr);
     goto fault;
